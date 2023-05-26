@@ -1,41 +1,59 @@
 # Yaml Parser
 
-### Creating
+A simple single header and source file yaml reading/writing library written by a first year uni student
+
+# Docs
+
+## Basics
 
 ```cpp
-yaml::Node root_node;
-// Open yaml formatted file
-if (!yaml::Node::open_file(&root_node, "path/to/file.yaml")) {
-    // file doesn't exist? create one
-    root_node = yaml::Node::create_file("path/to/file/location.yaml");
-}
+// create the root node, this shouldnt have a name or value, only children nodes
+yaml::Node scene_node = {};
+
+// attach children nodes
+scene_node << yaml::node("Entity001");
+           << yaml::node("Entity002");
+           << yaml::node("Entity003");
+           << yaml::node("Entity004");
 ```
 
-### Writing
+***Result in yaml***
 
-```cpp
-if (!root_node.node_exists("Entity")) {
-    // Create node
-    root_node << yaml::node<std::string>("Entity", "Name");
-} else {
-    // Override node
-    root_node["Entity"] = yaml::value<std::string>("Rename");
-}
-
-// Delete node
-root_node.remove("Entity");
+```yaml
+Entity001:
+Entity002:
+Entity003:
+Entity004:
 ```
 
-### Reading
+### Add child nodes to "Entity001"
 
 ```cpp
-if (root_node.node_exists("Entity")) {
-    std::cout << yaml::convert<std::string>(root_node["Entity"]) << "\n";
-}
+// get the node (can provide the index)
+yaml::Node& entity_node = scene_node["Entity001"];
+
+// add some data to entity
+entity_node << yaml::node("Type", (const char*)"Person")
+            << yaml::node("FirstName", (const char*)"John")
+            << yaml::node("LastName", (const char*)"Doe")
+            << yaml::node("Age", 32)
 ```
 
-### Save File
+***Result in yaml***
+
+```yaml
+Entity001:
+  Type: "Person"
+  FirstName: "John"
+  LastName: "Doe"
+  Age: 32
+Entity002:
+Entity003:
+Entity004:
+```
+
+### Now to write data to file
 
 ```cpp
-root_node.write_file();
+scene_node.write_file("scene_data.yaml");
 ```
