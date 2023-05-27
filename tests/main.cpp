@@ -64,15 +64,18 @@ yaml::Node construct_yaml_example() {
     yaml::Node scene_node = {};
 
     scene_node << yaml::node("SceneName", (const char*)"TestScene");
-    scene_node << yaml::node("Entity1");
+    for (std::size_t i = 0; i < 3; i++) {
+        std::string name = "Entity" + std::to_string(i);
+        scene_node << yaml::node(name);
 
-    yaml::Node& entity_node = scene_node["Entity1"];
-    entity_node << yaml::node("TransformComponent");
+        yaml::Node& entity_node = scene_node[name];
+        entity_node << yaml::node("TransformComponent");
 
-    yaml::Node& transform = entity_node[0];
-    transform << yaml::node("translation", Vector3{1, 2, 3})
-              << yaml::node("rotation", Vector3{43, 23, 1})
-              << yaml::node("scale", Vector3{1, 1, 1});
+        yaml::Node& transform = entity_node[0];
+        transform << yaml::node("translation", Vector3{1, 2, 3})
+                  << yaml::node("rotation", Vector3{43, 23, 1})
+                  << yaml::node("scale", Vector3{1, 1, 1});
+    }
 
     std::cout << scene_node.get_as_string() << "\n\n";
 
@@ -80,14 +83,21 @@ yaml::Node construct_yaml_example() {
 }
 
 void write_to_file_example(const yaml::Node& node, const std::string& filename) {
-    std::cout << "Write to file example:\n\n";
     if (!node.write_file(filename)) {
+        std::cout << "Write to file example:\n\n";
         std::cout << "failed to write to file\n";
     }
+}
+
+void read_file_example(const std::string& filename) {
+    std::cout << "Read file example:\n\n";
+    yaml::Node root_node = yaml::Node::open(filename);
+    std::cout << root_node.get_as_string() << "\n";
 }
 
 int main(int argc, char** argv) {
     yaml::Node node = construct_yaml_example();
     write_to_file_example(node, "scene_save.yaml");
+    read_file_example("scene_save.yaml");
     return 0;
 }

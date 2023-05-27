@@ -1,14 +1,25 @@
 #include "yaml.hpp"
+
 #include <cassert>
 #include <cinttypes>
 #include <iostream>
+#include <string.h>
 
 namespace yaml {
 
 const std::size_t Node::null_index = std::string::npos;
 
-// TODO: finish basic writing useage first
-Node Node::open(const std::string& filename) { return Node(); }
+Node Node::open(const std::string& filename) {
+    Node root_node = {};
+
+    std::FILE* file = std::fopen(filename.c_str(), "r");
+    if (file != nullptr) {
+        _read_node(file, &root_node, 0);
+        std::fclose(file);
+    }
+
+    return root_node;
+}
 
 Node::Node(const std::string& field_name) : m_name(field_name) {}
 Node::Node(const std::string& field_name, const std::string& value)
@@ -141,7 +152,7 @@ bool Node::write_if_file_exists(const std::string& filename) const {
 }
 
 void Node::_construct_string(std::string& str, const Node& node, std::size_t indent) {
-    char str_indent[1024] = {};
+    char str_indent[1024];
     for (std::size_t i = 0; i < indent; i++) {
         str_indent[i] = ' ';
     }
@@ -165,7 +176,7 @@ void Node::_construct_string(std::string& str, const Node& node, std::size_t ind
 }
 
 bool Node::_write_node(std::FILE* file, const Node& node, std::size_t indent) {
-    char str_indent[1024] = {};
+    char str_indent[1024];
     for (std::size_t i = 0; i < indent; i++) {
         str_indent[i] = ' ';
     }
@@ -183,7 +194,8 @@ bool Node::_write_node(std::FILE* file, const Node& node, std::size_t indent) {
             );
         } else {
             std::fputs(
-                std::string(str_indent + node.get_name() + ": " + node.get_value() + "\n").c_str(), file
+                std::string(str_indent + node.get_name() + ": " + node.get_value() + "\n").c_str(),
+                file
             );
         }
     } else {
@@ -197,6 +209,118 @@ bool Node::_write_node(std::FILE* file, const Node& node, std::size_t indent) {
     }
 
     return true;
+}
+
+void Node::_read_node(std::FILE* file, Node* last, std::size_t last_indent_size) {
+    char name[max_name_size()];
+    char value[max_value_size()];
+    std::size_t name_size = 0;
+    std::size_t value_size = 0;
+    std::size_t indent_size = 0;
+
+    bool line_not_null = true;
+    while (name_size == 0 && line_not_null) {
+        line_not_null = _read_line(file, name, value, name_size, value_size, indent_size);
+    }
+
+    if (line_not_null) {
+        Node* current = nullptr;
+        if (indent_size == last_indent_size + 2) {
+            last->push_back(Node(name, value));
+            current = &last->m_children.back();
+            current->m_parent = last;
+        } else {
+            std::size_t diff = last_indent_size - indent_size;
+            for (std::size_t i = 0; i < diff; i += 2) {
+                last = last->m_parent;
+            }
+
+            if (last->m_parent != nullptr) {
+                last->m_parent->push_back(Node(name, value));
+                current = &last->m_parent->m_children.back();
+                current->m_parent = last->m_parent;
+            } else {
+                // at the root node
+                last->push_back(Node(name, value));
+                current = &last->m_children.back();
+                current->m_parent = last;
+            }
+        }
+        _read_node(file, current, indent_size);
+    }
+}
+
+bool Node::_read_line(
+    std::FILE* file, char* name, char* value, std::size_t& name_size, std::size_t& value_size,
+    std::size_t& indent_size
+) {
+    char line[max_line_size()];
+    if (std::fgets(line, max_line_size(), file) != nullptr) {
+        std::size_t length = static_cast<std::size_t>(strlen(line));
+
+        bool finished_intent_count = false;
+        bool finished_line = false;
+        bool fill_value = false;
+        std::size_t j = 0;
+
+        for (std::size_t i = 0; i < length; i++) {
+            switch (line[i]) {
+            case '\n':
+                finished_line = true;
+                break;
+            case ' ':
+                if (!finished_intent_count) {
+                    indent_size++;
+                }
+                continue;
+            case '#': // comments
+                finished_line = true;
+                if (fill_value) {
+                    value[j] = '\0';
+                } else {
+                    name[j] = '\0';
+                    fill_value = true;
+                }
+                break;
+
+            case '\r':
+                continue;
+            case '\'':
+                continue;
+            case '\"':
+                continue;
+
+            default:
+                finished_intent_count = true;
+
+                if (line[i] == ':' && !fill_value) {
+                    fill_value = true;
+                    name[j] = '\0';
+                    name_size = j;
+                    j = 0;
+                } else {
+                    if (fill_value) {
+                        value[j] = line[i];
+                    } else {
+                        name[j] = line[i];
+                    }
+                    j++;
+                }
+
+                break;
+            }
+
+            if (finished_line) {
+                assert(fill_value && "yaml syntax error, must have a ':' after field name");
+                break;
+            }
+        }
+        value[j] = '\0';
+        value_size = j;
+
+        return true;
+    }
+    return false;
 }
 
 } // namespace yaml

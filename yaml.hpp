@@ -1,6 +1,7 @@
 #ifndef __YAML_HPP__
 #define __YAML_HPP__
 
+#include <cassert>
 #include <cstdint>
 #include <string>
 #include <typeinfo>
@@ -18,6 +19,9 @@ class Node {
   public:
     static const std::size_t null_index;
     static Node open(const std::string& filename);
+    inline static constexpr std::size_t max_line_size() { return 2048; }
+    inline static constexpr std::size_t max_name_size() { return 100; }
+    inline static constexpr std::size_t max_value_size() { return 1948; }
 
   public:
     Node() = default;
@@ -68,7 +72,13 @@ class Node {
   private:
     static void _construct_string(std::string& str, const Node& node, std::size_t indent);
     static bool _write_node(std::FILE* file, const Node& node, std::size_t indent);
+    static void _read_node(std::FILE* file, Node* last, std::size_t last_indent_size);
+    static bool _read_line(
+        std::FILE* file, char* name, char* value, std::size_t& name_size, std::size_t& value_size,
+        std::size_t& indent_size
+    );
 
+  private:
     std::string m_name = {};
     std::string m_value = {};
     std::vector<Node> m_children = {};
@@ -97,11 +107,27 @@ struct Convert<const char*> {
 template<typename _T>
 Node node(const std::string& field_name, const _T& value) {
     Node node = Node(field_name, Convert<_T>().value_to_str(value));
+
+    assert(
+        node.get_name().size() < Node::max_name_size() &&
+        "YAML ASSERT: node name cannot exceed the max name size"
+    );
+    assert(
+        node.get_value().size() < Node::max_value_size() &&
+        "YAML ASSERT: node variable formatted into string cannot exceed max size"
+    );
+
     node.set_hash(TypeInfo<_T>().get_hash());
     return node;
 }
 
-inline Node node(const std::string& field_name) { return Node(field_name); }
+inline Node node(const std::string& field_name) {
+    assert(
+        field_name.size() < Node::max_name_size() &&
+        "YAML ASSERT: node name cannot exceed the max name size"
+    );
+    return Node(field_name);
+}
 
 } // namespace yaml
 
