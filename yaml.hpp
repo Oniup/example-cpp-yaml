@@ -88,8 +88,21 @@ class Node {
 
 template<typename _T>
 struct Convert {
-    std::string value_to_str(const _T& value) { return std::to_string(value); }
-    _T value(const Node& node) { return node.get_value(); }
+    std::string value_to_str(const _T& value);
+    _T value(const Node& node);
+};
+
+template<>
+struct Convert<bool> {
+    std::string value_to_str(const bool& value) { return std::to_string(value); }
+
+    bool value(const Node& node) {
+        if (node.get_value() == "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 };
 
 template<>
