@@ -59,11 +59,12 @@ class Node {
     inline void set_parent(Node* parent) { m_parent = parent; }
     inline void set_hash(std::size_t type_hash) { m_hash = type_hash; }
 
+    inline bool empty() const { return m_name.size() > 0; }
     inline void push_back(const Node& node) { m_children.push_back(node); }
     inline void push_back(Node&& node) { m_children.push_back(std::move(node)); }
     inline void pop_back(std::size_t count = 1) { m_children.resize(m_children.size() - count); }
-    bool compare(const Node& other);
-    std::size_t exists(const std::string& field_name);
+    bool compare(const Node& other) const;
+    std::size_t exists(const std::string& field_name) const;
 
     bool write_file(std::FILE* file) const;
     bool write_file(const std::string& filename) const;
@@ -106,14 +107,68 @@ struct Convert<bool> {
 };
 
 template<>
-struct Convert<std::string> {
-    std::string value(const Node& node) { return node.get_value(); }
-    std::string value_to_str(const std::string& value) { return std::string(value); }
+struct Convert<std::int16_t> {
+    std::int16_t value(const Node& node) { return std::stoi(node.get_value()); }
+    std::string value_to_str(const std::int16_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<const char*> {
-    const char* value(const Node& node) { return node.get_value().c_str(); }
+struct Convert<std::int32_t> {
+    std::int32_t value(const Node& node) { return std::stoi(node.get_value()); }
+    std::string value_to_str(const std::int32_t& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<std::int64_t> {
+    std::int64_t value(const Node& node) { return std::stoll(node.get_value()); }
+    std::string value_to_str(const std::int64_t& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<std::uint16_t> {
+    std::uint16_t value(const Node& node) { return std::stoul(node.get_value()); }
+    std::string value_to_str(const std::uint16_t& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<std::uint32_t> {
+    std::uint32_t value(const Node& node) { return std::stoul(node.get_value()); }
+    std::string value_to_str(const std::uint32_t& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<std::size_t> {
+    std::size_t value(const Node& node) { return std::stoull(node.get_value()); }
+    std::string value_to_str(const std::size_t& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<float> {
+    float value(const Node& node) { return std::stof(node.get_value()); }
+    std::string value_to_str(const float& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<double> {
+    double value(const Node& node) { return std::stod(node.get_value()); }
+    std::string value_to_str(const double& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<long double> {
+    long double value(const Node& node) { return std::stold(node.get_value()); }
+    std::string value_to_str(const long double& value) { return std::to_string(value); }
+};
+
+template<>
+struct Convert<char*> {
+    char* value(const Node& node) { return const_cast<char*>(node.get_value().c_str()); }
+    std::string value_to_str(const char*& value) { return std::string(value); }
+};
+
+template<>
+struct Convert<std::string> {
+    std::string value(const Node& node) { return node.get_value(); }
     std::string value_to_str(const std::string& value) { return std::string(value); }
 };
 

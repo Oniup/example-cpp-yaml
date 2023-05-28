@@ -101,7 +101,7 @@ std::string Node::get_as_string() const {
     return str;
 }
 
-bool Node::compare(const Node& other) {
+bool Node::compare(const Node& other) const {
     if (m_name != other.m_name || m_value != other.m_value || m_parent != other.m_parent) {
         return false;
     }
@@ -115,7 +115,7 @@ bool Node::compare(const Node& other) {
     return true;
 }
 
-std::size_t Node::exists(const std::string& field_name) {
+std::size_t Node::exists(const std::string& field_name) const {
     for (std::size_t i = 0; i < m_children.size(); i++) {
         if (m_children[i].get_name() == field_name) {
             return i;
