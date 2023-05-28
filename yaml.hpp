@@ -93,6 +93,12 @@ struct Convert {
     _T value(const Node& node);
 };
 
+template<typename _T>
+struct Convert<std::vector<_T>> {
+    std::string value_to_str(const std::vector<_T>& value) { return ""; }
+    std::vector<_T> value(const Node& node) { return {}; }
+};
+
 template<>
 struct Convert<bool> {
     std::string value_to_str(const bool& value) { return std::to_string(value); }
