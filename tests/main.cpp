@@ -32,58 +32,65 @@ struct yaml::Convert<Vector3> {
         );
     }
 
-    Vector3 value(const Node& node) {
-        Vector3 result = {};
+    Vector3 value(const std::string& str) {
+        Vector3 vec = {};
 
         char number[50];
         std::size_t j = 0;
         std::size_t index = 0;
 
-        const std::string& value = node.get_value();
-        for (std::size_t i = 0; i < value.size(); i++) {
-            if (value[i] == '[' || value[i] == ']' || value[i] == '\r' || value[i] == ' ') {
+        for (std::size_t i = 0; i < str.size(); i++) {
+            if (str[i] == '[' || str[i] == ']' || str[i] == '\r' || str[i] == ' ') {
                 continue;
-            } else if (value[i] == ',') {
+            } else if (str[i] == ',') {
                 number[j] = '\0';
-                result[index] = std::stof(number);
+                vec[index] = std::stof(number);
                 j = 0;
                 index++;
             } else {
-                number[j] = value[i];
+                number[j] = str[i];
                 j++;
             }
         }
 
-        return result;
+        return vec;
     }
 };
 
 yaml::Node construct_yaml_example() {
     std::cout << "Construct yaml file example:\n\n";
 
-    yaml::Node scene_node = {};
+    yaml::Node root_node = {};
 
-    scene_node << yaml::node("SceneName", (const char*)"TestScene");
-    for (std::size_t i = 0; i < 3; i++) {
-        std::string name = "Entity" + std::to_string(i);
-        scene_node << yaml::node(name);
+    std::vector<std::string> scene_names = {"MenuScene", "TestScene", "LastScene"};
+    root_node << yaml::node("SceneNames", scene_names);
+    for (const std::string& name : scene_names) {
+        root_node << yaml::node(name);
+        yaml::Node& scene_node = root_node[name];
 
-        yaml::Node& entity_node = scene_node[name];
-        entity_node << yaml::node("TransformComponent");
+        for (std::size_t i = 0; i < 3; i++) {
+            std::string entity_name = "Entity" + std::to_string(i);
+            scene_node << yaml::node(entity_name);
 
-        yaml::Node& transform = entity_node[0];
-        transform << yaml::node("translation", Vector3{1, 2, 3})
-                  << yaml::node("rotation", Vector3{43, 23, 1})
-                  << yaml::node("scale", Vector3{1, 1, 1});
+            yaml::Node& entity_node = scene_node[entity_name];
+            entity_node << yaml::node("TransformComponent");
+
+            yaml::Node& transform = entity_node[0];
+            transform << yaml::node("translation", Vector3{1, 2, 3})
+                      << yaml::node("rotation", Vector3{43, 23, 1})
+                      << yaml::node("scale", Vector3{1, 1, 1});
+        }
     }
 
-    std::cout << scene_node.get_as_string() << "\n\n";
+    // NOTE: can also use yaml::get_root_as_string() and pass any of its nodes to print the entire
+    // yaml file
+    std::cout << root_node.get_as_string() << "\n\n";
 
-    return scene_node;
+    return root_node;
 }
 
 void write_to_file_example(const yaml::Node& node, const std::string& filename) {
-    if (!node.write_file(filename)) {
+    if (!yaml::write(node, filename)) {
         std::cout << "Write to file example:\n\n";
         std::cout << "failed to write to file\n";
     }
@@ -91,7 +98,7 @@ void write_to_file_example(const yaml::Node& node, const std::string& filename) 
 
 void read_file_example(const std::string& filename) {
     std::cout << "Read file example:\n\n";
-    yaml::Node root_node = yaml::Node::open(filename);
+    yaml::Node root_node = yaml::open(filename);
     std::cout << root_node.get_as_string() << "\n";
 }
 

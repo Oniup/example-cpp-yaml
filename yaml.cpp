@@ -9,18 +9,6 @@ namespace yaml {
 
 const std::size_t Node::null_index = std::string::npos;
 
-Node Node::open(const std::string& filename) {
-    Node root_node = {};
-
-    std::FILE* file = std::fopen(filename.c_str(), "r");
-    if (file != nullptr) {
-        _read_node(file, &root_node, 0);
-        std::fclose(file);
-    }
-
-    return root_node;
-}
-
 Node::Node(const std::string& field_name) : m_name(field_name) {}
 Node::Node(const std::string& field_name, const std::string& value)
     : m_name(field_name), m_value(value) {}
@@ -99,6 +87,16 @@ std::string Node::get_as_string() const {
     std::string str = {};
     _construct_string(str, *this, 0);
     return str;
+}
+
+void Node::open(const std::string& filename) {
+    Node root_node = {};
+
+    std::FILE* file = std::fopen(filename.c_str(), "r");
+    if (file != nullptr) {
+        _read_node(file, &root_node, 0);
+        std::fclose(file);
+    }
 }
 
 bool Node::compare(const Node& other) const {
@@ -321,6 +319,27 @@ bool Node::_read_line(
         return true;
     }
     return false;
+}
+
+Node& get_root_node(Node& node) {
+    while (node.get_parent() != nullptr) {
+        node = *node.get_parent();
+    }
+    return node;
+}
+
+const Node& get_root_node(const Node& node) {
+    const Node* target = &node;
+    while (node.get_parent() != nullptr) {
+        target = target->get_parent();
+    }
+    return *target;
+}
+
+Node open(const std::string& filename) {
+    Node node = {};
+    node.open(filename);
+    return node;
 }
 
 } // namespace yaml

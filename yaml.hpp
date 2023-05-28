@@ -18,7 +18,6 @@ struct TypeInfo {
 class Node {
   public:
     static const std::size_t null_index;
-    static Node open(const std::string& filename);
     inline static constexpr std::size_t max_line_size() { return 2048; }
     inline static constexpr std::size_t max_name_size() { return 100; }
     inline static constexpr std::size_t max_value_size() { return 1948; }
@@ -49,6 +48,9 @@ class Node {
     inline const Node* get_parent() const { return m_parent; }
     inline std::size_t get_type_hash() const { return m_hash; }
 
+    inline std::vector<Node>& get_children() { return m_children; }
+    inline Node* get_parent() { return m_parent; }
+
     Node& get_child(const std::string& field_name);
     Node& get_child(std::size_t index);
     inline Node& get_child(const std::string& field_name) const { return get_child(field_name); }
@@ -59,6 +61,7 @@ class Node {
     inline void set_parent(Node* parent) { m_parent = parent; }
     inline void set_hash(std::size_t type_hash) { m_hash = type_hash; }
 
+    void open(const std::string& filename);
     inline bool empty() const { return m_name.size() > 0; }
     inline void push_back(const Node& node) { m_children.push_back(node); }
     inline void push_back(Node&& node) { m_children.push_back(std::move(node)); }
@@ -87,24 +90,103 @@ class Node {
     std::size_t m_hash = 0;
 };
 
+Node& get_root_node(Node& node);
+const Node& get_root_node(const Node& node);
+Node open(const std::string& filename);
+
+inline bool write(const Node& node, std::FILE* file) { return get_root_node(node).write_file(file); }
+
+inline bool write(const Node& node, const std::string& filename) {
+    return get_root_node(node).write_file(filename);
+}
+
+inline bool write_if_exists(const Node& node, const std::string& filename) {
+    return get_root_node(node).write_if_file_exists(filename);
+}
+
+inline std::string get_root_as_string(Node& node) { return get_root_node(node).get_as_string(); }
+
 template<typename _T>
 struct Convert {
     std::string value_to_str(const _T& value);
-    _T value(const Node& node);
+    _T value(const std::string& str);
+
+    _T value(const Node& node) { return value(node.get_value()); }
 };
 
 template<typename _T>
 struct Convert<std::vector<_T>> {
-    std::string value_to_str(const std::vector<_T>& value) { return ""; }
-    std::vector<_T> value(const Node& node) { return {}; }
+    std::string value_to_str(const std::vector<_T>& value) {
+        std::string str = "[";
+
+        for (std::size_t i = 0; i < value.size(); i++) {
+            str += Convert<_T>().value_to_str(value[i]);
+            if (i < value.size() - 1) {
+                str += ", ";
+            }
+        }
+
+        str += "]";
+        return str;
+    }
+
+    std::vector<_T> value(const std::string& str) {
+        std::vector<_T> vec = {};
+
+        bool fill_variable = false;
+        bool is_filling_string = false;
+        char value[Node::max_value_size()];
+        std::size_t j = 0;
+
+        for (std::size_t i = 0; i < str.size(); i++) {
+            switch (str[i]) {
+            case '\r':
+                continue;
+            case ' ':
+                if (!fill_variable) {
+                    continue;
+                }
+                break;
+
+            case '[':
+                continue;
+            case ']':
+                continue;
+            case '\\':
+                // NOTE: to still allow ',' when its supposed to be in the string returned
+                if (str[i + 1] == '\"') {
+                    is_filling_string = !is_filling_string;
+                }
+                break;
+            case ',':
+                if (!is_filling_string) {
+                    value[j] = '\0';
+                    vec.push_back(Convert<_T>().value(value));
+                    j = 0;
+                    continue;
+                }
+                break;
+            }
+
+            value[j] = str[i];
+            j++;
+        }
+
+        if (j > 0) {
+            value[j] = '\0';
+            vec.push_back(Convert<_T>().value(value));
+        }
+
+        return vec;
+    }
 };
 
 template<>
 struct Convert<bool> {
     std::string value_to_str(const bool& value) { return std::to_string(value); }
 
-    bool value(const Node& node) {
-        if (node.get_value() == "true") {
+    bool value(const std::string& str) {
+        if (str == "true") {
             return true;
         } else {
             return false;
@@ -114,68 +196,71 @@ struct Convert<bool> {
 
 template<>
 struct Convert<std::int16_t> {
-    std::int16_t value(const Node& node) { return std::stoi(node.get_value()); }
+    std::int16_t value(const std::string& str) { return std::stoi(str); }
     std::string value_to_str(const std::int16_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<std::int32_t> {
-    std::int32_t value(const Node& node) { return std::stoi(node.get_value()); }
+    std::int32_t value(const std::string& str) { return std::stoi(str); }
     std::string value_to_str(const std::int32_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<std::int64_t> {
-    std::int64_t value(const Node& node) { return std::stoll(node.get_value()); }
+    std::int64_t value(const std::string& str) { return std::stoll(str); }
     std::string value_to_str(const std::int64_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<std::uint16_t> {
-    std::uint16_t value(const Node& node) { return std::stoul(node.get_value()); }
+    std::uint16_t value(const std::string& str) { return std::stoul(str); }
     std::string value_to_str(const std::uint16_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<std::uint32_t> {
-    std::uint32_t value(const Node& node) { return std::stoul(node.get_value()); }
+    std::uint32_t value(const std::string& str) { return std::stoul(str); }
     std::string value_to_str(const std::uint32_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<std::size_t> {
-    std::size_t value(const Node& node) { return std::stoull(node.get_value()); }
+    std::size_t value(const std::string& str) { return std::stoull(str); }
     std::string value_to_str(const std::size_t& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<float> {
-    float value(const Node& node) { return std::stof(node.get_value()); }
+    float value(const std::string& str) { return std::stof(str); }
     std::string value_to_str(const float& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<double> {
-    double value(const Node& node) { return std::stod(node.get_value()); }
+    double value(const std::string& str) { return std::stod(str); }
     std::string value_to_str(const double& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<long double> {
-    long double value(const Node& node) { return std::stold(node.get_value()); }
+    long double value(const std::string& str) { return std::stold(str); }
     std::string value_to_str(const long double& value) { return std::to_string(value); }
 };
 
 template<>
 struct Convert<char*> {
-    char* value(const Node& node) { return const_cast<char*>(node.get_value().c_str()); }
+    char* value(const std::string& str) { return const_cast<char*>(str.c_str()); }
     std::string value_to_str(const char*& value) { return std::string(value); }
 };
 
 template<>
 struct Convert<std::string> {
-    std::string value(const Node& node) { return node.get_value(); }
-    std::string value_to_str(const std::string& value) { return std::string(value); }
+    std::string value(const std::string& str) {
+        return std::string(str.c_str() + 1, str.size() - 2);
+    }
+
+    std::string value_to_str(const std::string& value) { return "\"" + value + "\""; }
 };
 
 template<typename _T>
