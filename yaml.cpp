@@ -90,11 +90,11 @@ std::string Node::get_as_string() const {
 }
 
 void Node::open(const std::string& filename) {
-    Node root_node = {};
+    m_children.clear();
 
     std::FILE* file = std::fopen(filename.c_str(), "r");
     if (file != nullptr) {
-        _read_node(file, &root_node, 0);
+        _read_node(file, this, 0);
         std::fclose(file);
     }
 }
