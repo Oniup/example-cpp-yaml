@@ -15,6 +15,14 @@ struct TypeInfo {
     std::string get_name() { return typeid(_T).name(); }
 };
 
+template<typename _T>
+struct Convert {
+    std::string value_to_str(const _T& value);
+    _T value(const std::string& str);
+
+    _T value(const class Node& node);
+};
+
 class Node {
   public:
     static const std::size_t null_index;
@@ -55,6 +63,11 @@ class Node {
     Node& get_child(std::size_t index);
     inline Node& get_child(const std::string& field_name) const { return get_child(field_name); }
     inline Node& get_child(std::size_t index) const { return get_child(index); }
+
+    template<typename _T>
+    _T as() {
+        return Convert<_T>().value(m_value);
+    }
 
     std::string get_as_string() const;
 
@@ -107,14 +120,6 @@ inline bool write_if_exists(const Node& node, const std::string& filename) {
 }
 
 inline std::string get_root_as_string(Node& node) { return get_root_node(node).get_as_string(); }
-
-template<typename _T>
-struct Convert {
-    std::string value_to_str(const _T& value);
-    _T value(const std::string& str);
-
-    _T value(const Node& node);
-};
 
 template<typename _T>
 struct Convert<std::vector<_T>> {
@@ -271,12 +276,9 @@ struct Convert<char*> {
 
 template<>
 struct Convert<std::string> {
-    std::string value(const std::string& str) {
-        return str;
-    }
-
+    std::string value(const std::string& str) { return str; }
     std::string value(const Node& node) { return value(node.get_value()); }
-    std::string value_to_str(const std::string& value) { return "\"" + value + "\""; }
+    std::string value_to_str(const std::string& value) { return value; }
 };
 
 template<typename _T>
