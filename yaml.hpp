@@ -17,8 +17,60 @@ struct Convert {
     _T value(const class Node& node);
 };
 
+template<typename _Node>
+class NodeIterator {
+  public:
+    NodeIterator(std::vector<_Node>::iterator it) : m_it(it) {}
+    NodeIterator(const NodeIterator& other) : m_it(other.m_it) {}
+    NodeIterator(NodeIterator&& other) : m_it(other.m_it) { other.m_it = nullptr; }
+
+    bool operator==(const NodeIterator& other) { return m_it == other.m_it; }
+    bool operator!=(const NodeIterator& other) { return m_it != other.m_it; }
+
+    NodeIterator& operator=(const NodeIterator& other) {
+        m_it == other.m_it;
+        return *this;
+    }
+
+    NodeIterator& operator=(NodeIterator&& other) {
+        m_it == other.it;
+        other.m_it = nullptr;
+        return *this;
+    }
+
+    NodeIterator& operator++() {
+        m_it++;
+        return *this;
+    }
+
+    NodeIterator operator++(int) {
+        NodeIterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    NodeIterator& operator--() {
+        m_it--;
+        return *this;
+    }
+
+    NodeIterator operator--(int) {
+        NodeIterator temp = *this;
+        --(*this);
+        return temp;
+    }
+
+    _Node& operator*() { return *m_it; }
+    _Node operator->() { return &m_it; }
+
+  private:
+    std::vector<_Node>::iterator m_it = nullptr;
+};
+
 class Node {
   public:
+    using Iterator = NodeIterator<Node>;
+
     static const std::size_t null_index;
     inline static constexpr std::size_t max_line_size() { return 2048; }
     inline static constexpr std::size_t max_name_size() { return 100; }
@@ -49,6 +101,9 @@ class Node {
 
     inline bool operator==(const Node& other) { return compare(other); }
     inline bool operator!=(const Node& other) { return !(*this == other); }
+
+    inline Iterator begin() { return Iterator(m_children.begin()); }
+    inline Iterator end() { return Iterator(m_children.end()); }
 
     inline const std::string& get_name() const { return m_name; }
     inline const std::string& get_value() const { return m_value; }
