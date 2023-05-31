@@ -10,12 +10,6 @@
 namespace yaml {
 
 template<typename _T>
-struct TypeInfo {
-    std::size_t get_hash() { return typeid(_T).hash_code(); }
-    std::string get_name() { return typeid(_T).name(); }
-};
-
-template<typename _T>
 struct Convert {
     std::string value_to_str(const _T& value);
     _T value(const std::string& str);
@@ -41,6 +35,12 @@ class Node {
     Node& operator=(const Node& other);
     Node& operator=(Node&& other);
     Node& operator<<(const Node& other);
+
+    template<typename _T>
+    Node& operator=(const _T& value) {
+        m_value = Convert<_T>().value_to_str(value);
+        return *this;
+    }
 
     inline Node& operator[](const std::string& field_name) { return get_child(field_name); }
     inline Node& operator[](const std::string& field_name) const { return get_child(field_name); }
@@ -74,8 +74,8 @@ class Node {
     inline void set_parent(Node* parent) { m_parent = parent; }
     inline void set_hash(std::size_t type_hash) { m_hash = type_hash; }
 
-    void open(const std::string& filename);
-    inline bool empty() const { return m_name.size() > 0; }
+    bool open(const std::string& filename);
+    inline bool empty() const { return m_children.size() == 0; }
     inline void push_back(const Node& node) { m_children.push_back(node); }
     inline void push_back(Node&& node) { m_children.push_back(std::move(node)); }
     inline void pop_back(std::size_t count = 1) { m_children.resize(m_children.size() - count); }
@@ -275,10 +275,26 @@ struct Convert<char*> {
 };
 
 template<>
+struct Convert<char> {
+    char value(const std::string& str) { return str[1]; }
+    char value(const Node& node) { return value(node.get_value()); }
+    std::string value_to_str(const char*& value) { return std::string(value); }
+};
+
+template<>
 struct Convert<std::string> {
-    std::string value(const std::string& str) { return str; }
+    std::string value(const std::string& str) {
+        return std::string(str.c_str() + 1, str.size() - 2);
+    }
+
     std::string value(const Node& node) { return value(node.get_value()); }
-    std::string value_to_str(const std::string& value) { return value; }
+    std::string value_to_str(const std::string& value) {
+        if (value[0] == '\"' && value[value.size() - 1] == '\"') {
+            return value;
+        } else {
+            return std::string("\"" + value + "\"");
+        }
+    }
 };
 
 template<typename _T>
@@ -294,7 +310,6 @@ Node node(const std::string& field_name, const _T& value) {
         "YAML ASSERT: node variable formatted into string cannot exceed max size"
     );
 
-    node.set_hash(TypeInfo<_T>().get_hash());
     return node;
 }
 

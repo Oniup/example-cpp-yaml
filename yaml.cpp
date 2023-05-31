@@ -89,14 +89,16 @@ std::string Node::get_as_string() const {
     return str;
 }
 
-void Node::open(const std::string& filename) {
+bool Node::open(const std::string& filename) {
     m_children.clear();
 
     std::FILE* file = std::fopen(filename.c_str(), "r");
     if (file != nullptr) {
         _read_node(file, this, 0);
         std::fclose(file);
+        return true;
     }
+    return false;
 }
 
 bool Node::compare(const Node& other) const {
@@ -181,21 +183,10 @@ bool Node::_write_node(std::FILE* file, const Node& node, std::size_t indent) {
     str_indent[indent] = '\0';
 
     // write node with value into file
-    if (node.get_type_hash() != 0) {
-        if (node.get_type_hash() == TypeInfo<std::string>().get_hash() ||
-            node.get_type_hash() == TypeInfo<const char*>().get_hash()) {
-
-            std::fputs(
-                std::string(str_indent + node.get_name() + ": \"" + node.get_value() + "\"\n")
-                    .c_str(),
-                file
-            );
-        } else {
-            std::fputs(
-                std::string(str_indent + node.get_name() + ": " + node.get_value() + "\n").c_str(),
-                file
-            );
-        }
+    if (node.get_value().size() > 0) {
+        std::fputs(
+            std::string(str_indent + node.get_name() + ": " + node.get_value() + "\n").c_str(), file
+        );
     } else {
         std::fputs(std::string(str_indent + node.get_name() + ":\n").c_str(), file);
         for (std::size_t i = 0; i < node.m_children.size(); i++) {
@@ -282,10 +273,6 @@ bool Node::_read_line(
                 break;
 
             case '\r':
-                continue;
-            case '\'':
-                continue;
-            case '\"':
                 continue;
 
             default:
