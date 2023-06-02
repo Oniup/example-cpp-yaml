@@ -247,7 +247,12 @@ struct Convert<std::vector<_T>> {
 
 template<>
 struct Convert<bool> {
-    std::string value_to_str(const bool& value) { return std::to_string(value); }
+    std::string value_to_str(const bool& value) { 
+        if (value == true) {
+            return "true";
+        }
+        return "false";
+    }
     bool value(const Node& node) { return value(node.get_value()); }
 
     bool value(const std::string& str) {
