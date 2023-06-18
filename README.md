@@ -76,13 +76,16 @@ to allow the library to know how to parse the write, you'll need to implement a
 ### Example object
 
 ```cpp
-struct Vector3 {
+struct Vector3 
+{
     float x = 0;
     float y = 0;
     float z = 0;
 
-    float& operator[](std::size_t index) {
-        switch (index) {
+    float& operator[](std::size_t index) 
+    {
+        switch (index) 
+        {
         case 0:
             return x;
             break;
@@ -102,9 +105,11 @@ struct Vector3 {
 
 ```cpp
 template<>
-struct yaml::Convert<Vector3> {
+struct yaml::Convert<Vector3> 
+{
     // Format in the yaml file
-    std::string value_to_str(const Vector3& value) {
+    std::string value_to_str(const Vector3& value) 
+    {
         return std::string(
             "[" + std::to_string(value.x) + ", " + std::to_string(value.y) + ", " +
             std::to_string(value.z) + "]"
@@ -112,22 +117,27 @@ struct yaml::Convert<Vector3> {
     }
 
     // Converting format about back into original type
-    Vector3 value(const std::string& str) {
+    Vector3 value(const std::string& str) 
+    {
         Vector3 vec = {};
 
         char number[50];
         std::size_t j = 0;
         std::size_t index = 0;
 
-        for (std::size_t i = 0; i < str.size(); i++) {
-            if (str[i] == '[' || str[i] == ']' || str[i] == '\r' || str[i] == ' ') {
+        for (std::size_t i = 0; i < str.size(); i++) 
+        {
+            if (str[i] == '[' || str[i] == ']' || str[i] == '\r' || str[i] == ' ')
                 continue;
-            } else if (str[i] == ',') {
+            else if (str[i] == ',')
+            {
                 number[j] = '\0';
                 vec[index] = std::stof(number);
                 j = 0;
                 index++;
-            } else {
+            }
+            else
+            {
                 number[j] = str[i];
                 j++;
             }
