@@ -10,7 +10,8 @@
 namespace yaml {
 
 template<typename _T>
-struct Convert {
+struct Convert
+{
     std::string value_to_str(const _T& value);
     _T value(const std::string& str);
 
@@ -18,7 +19,8 @@ struct Convert {
 };
 
 template<typename _Node>
-class NodeIterator {
+class NodeIterator
+{
   public:
     NodeIterator(std::vector<_Node>::iterator it) : m_it(it) {}
     NodeIterator(const NodeIterator& other) : m_it(other.m_it) {}
@@ -27,34 +29,40 @@ class NodeIterator {
     bool operator==(const NodeIterator& other) { return m_it == other.m_it; }
     bool operator!=(const NodeIterator& other) { return m_it != other.m_it; }
 
-    NodeIterator& operator=(const NodeIterator& other) {
+    NodeIterator& operator=(const NodeIterator& other)
+    {
         m_it == other.m_it;
         return *this;
     }
 
-    NodeIterator& operator=(NodeIterator&& other) {
+    NodeIterator& operator=(NodeIterator&& other)
+    {
         m_it == other.it;
         other.m_it = nullptr;
         return *this;
     }
 
-    NodeIterator& operator++() {
+    NodeIterator& operator++()
+    {
         m_it++;
         return *this;
     }
 
-    NodeIterator operator++(int) {
+    NodeIterator operator++(int)
+    {
         NodeIterator temp = *this;
         ++(*this);
         return temp;
     }
 
-    NodeIterator& operator--() {
+    NodeIterator& operator--()
+    {
         m_it--;
         return *this;
     }
 
-    NodeIterator operator--(int) {
+    NodeIterator operator--(int)
+    {
         NodeIterator temp = *this;
         --(*this);
         return temp;
@@ -67,7 +75,8 @@ class NodeIterator {
     std::vector<_Node>::iterator m_it = nullptr;
 };
 
-class Node {
+class Node
+{
   public:
     using Iterator = NodeIterator<Node>;
 
@@ -89,7 +98,8 @@ class Node {
     Node& operator<<(const Node& other);
 
     template<typename _T>
-    Node& operator=(const _T& value) {
+    Node& operator=(const _T& value)
+    {
         m_value = Convert<_T>().value_to_str(value);
         return *this;
     }
@@ -120,7 +130,8 @@ class Node {
     inline Node& get_child(std::size_t index) const { return get_child(index); }
 
     template<typename _T>
-    _T as() {
+    _T as()
+    {
         return Convert<_T>().value(m_value);
     }
 
@@ -162,37 +173,43 @@ Node& get_root_node(Node& node);
 const Node& get_root_node(const Node& node);
 Node open(const std::string& filename);
 
-inline bool write(const Node& node, std::FILE* file) {
+inline bool write(const Node& node, std::FILE* file)
+{
     return get_root_node(node).write_file(file);
 }
 
-inline bool write(const Node& node, const std::string& filename) {
+inline bool write(const Node& node, const std::string& filename)
+{
     return get_root_node(node).write_file(filename);
 }
 
-inline bool write_if_exists(const Node& node, const std::string& filename) {
+inline bool write_if_exists(const Node& node, const std::string& filename)
+{
     return get_root_node(node).write_if_file_exists(filename);
 }
 
 inline std::string get_root_as_string(Node& node) { return get_root_node(node).get_as_string(); }
 
 template<typename _T>
-struct Convert<std::vector<_T>> {
-    std::string value_to_str(const std::vector<_T>& value) {
+struct Convert<std::vector<_T>>
+{
+    std::string value_to_str(const std::vector<_T>& value)
+    {
         std::string str = "[";
 
-        for (std::size_t i = 0; i < value.size(); i++) {
+        for (std::size_t i = 0; i < value.size(); i++)
+        {
             str += Convert<_T>().value_to_str(value[i]);
-            if (i < value.size() - 1) {
+            if (i < value.size() - 1)
                 str += ", ";
-            }
         }
 
         str += "]";
         return str;
     }
 
-    std::vector<_T> value(const std::string& str) {
+    std::vector<_T> value(const std::string& str)
+    {
         std::vector<_T> vec = {};
 
         bool fill_variable = false;
@@ -200,14 +217,15 @@ struct Convert<std::vector<_T>> {
         char value[Node::max_value_size()];
         std::size_t j = 0;
 
-        for (std::size_t i = 0; i < str.size(); i++) {
-            switch (str[i]) {
+        for (std::size_t i = 0; i < str.size(); i++)
+        {
+            switch (str[i])
+            {
             case '\r':
                 continue;
             case ' ':
-                if (!fill_variable) {
+                if (!fill_variable)
                     continue;
-                }
                 break;
 
             case '[':
@@ -216,12 +234,12 @@ struct Convert<std::vector<_T>> {
                 continue;
             case '\\':
                 // NOTE: to still allow ',' when its supposed to be in the string returned
-                if (str[i + 1] == '\"') {
+                if (str[i + 1] == '\"')
                     is_filling_string = !is_filling_string;
-                }
                 break;
             case ',':
-                if (!is_filling_string) {
+                if (!is_filling_string)
+                {
                     value[j] = '\0';
                     vec.push_back(Convert<_T>().value(value));
                     j = 0;
@@ -234,7 +252,8 @@ struct Convert<std::vector<_T>> {
             j++;
         }
 
-        if (j > 0) {
+        if (j > 0)
+        {
             value[j] = '\0';
             vec.push_back(Convert<_T>().value(value));
         }
@@ -246,119 +265,134 @@ struct Convert<std::vector<_T>> {
 };
 
 template<>
-struct Convert<bool> {
-    std::string value_to_str(const bool& value) { 
-        if (value == true) {
+struct Convert<bool>
+{
+    std::string value_to_str(const bool& value)
+    {
+        if (value == true)
             return "true";
-        }
         return "false";
     }
     bool value(const Node& node) { return value(node.get_value()); }
 
-    bool value(const std::string& str) {
-        if (str == "true") {
+    bool value(const std::string& str)
+    {
+        if (str == "true")
             return true;
-        } else {
+        else
             return false;
-        }
     }
 };
 
 template<>
-struct Convert<std::int16_t> {
+struct Convert<std::int16_t>
+{
     std::int16_t value(const std::string& str) { return std::stoi(str); }
     std::int16_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int16_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<std::int32_t> {
+struct Convert<std::int32_t>
+{
     std::int32_t value(const std::string& str) { return std::stoi(str); }
     std::int32_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int32_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<std::int64_t> {
+struct Convert<std::int64_t>
+{
     std::int64_t value(const std::string& str) { return std::stoll(str); }
     std::int64_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int64_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<std::uint16_t> {
+struct Convert<std::uint16_t>
+{
     std::uint16_t value(const std::string& str) { return std::stoul(str); }
     std::uint16_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::uint16_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<std::uint32_t> {
+struct Convert<std::uint32_t>
+{
     std::uint32_t value(const std::string& str) { return std::stoul(str); }
     std::uint32_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::uint32_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<std::size_t> {
+struct Convert<std::size_t>
+{
     std::size_t value(const std::string& str) { return std::stoull(str); }
     std::size_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::size_t& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<float> {
+struct Convert<float>
+{
     float value(const std::string& str) { return std::stof(str); }
     float value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const float& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<double> {
+struct Convert<double>
+{
     double value(const std::string& str) { return std::stod(str); }
     double value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const double& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<long double> {
+struct Convert<long double>
+{
     long double value(const std::string& str) { return std::stold(str); }
     long double value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const long double& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<char*> {
+struct Convert<char*>
+{
     char* value(const std::string& str) { return const_cast<char*>(str.c_str()); }
     char* value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const char*& value) { return std::string(value); }
 };
 
 template<>
-struct Convert<char> {
+struct Convert<char>
+{
     char value(const std::string& str) { return str[1]; }
     char value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const char*& value) { return std::string(value); }
 };
 
 template<>
-struct Convert<std::string> {
-    std::string value(const std::string& str) {
+struct Convert<std::string>
+{
+    std::string value(const std::string& str)
+    {
         return std::string(str.c_str() + 1, str.size() - 2);
     }
 
     std::string value(const Node& node) { return value(node.get_value()); }
-    std::string value_to_str(const std::string& value) {
-        if (value[0] == '\"' && value[value.size() - 1] == '\"') {
+    std::string value_to_str(const std::string& value)
+    {
+        if (value[0] == '\"' && value[value.size() - 1] == '\"')
             return value;
-        } else {
+        else
             return std::string("\"" + value + "\"");
-        }
     }
 };
 
 template<typename _T>
-Node node(const std::string& field_name, const _T& value) {
+Node node(const std::string& field_name, const _T& value)
+{
     Node node = Node(field_name, Convert<_T>().value_to_str(value));
 
     assert(
@@ -373,7 +407,8 @@ Node node(const std::string& field_name, const _T& value) {
     return node;
 }
 
-inline Node node(const std::string& field_name) {
+inline Node node(const std::string& field_name)
+{
     assert(
         field_name.size() < Node::max_name_size() &&
         "YAML ASSERT: node name cannot exceed the max name size"
