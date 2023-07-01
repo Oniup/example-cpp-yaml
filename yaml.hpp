@@ -137,6 +137,11 @@ class Node
     inline bool operator==(const Node& other) { return compare(other); }
     inline bool operator!=(const Node& other) { return !(*this == other); }
 
+    inline yaml::Node& front() { return m_children.front(); }
+    inline yaml::Node& back() { return m_children.back(); }
+    inline const yaml::Node& front() const { return m_children.front(); }
+    inline const yaml::Node& back() const { return m_children.back(); }
+
     inline Iterator begin() { return Iterator(m_children.begin()); }
     inline Iterator end() { return Iterator(m_children.end()); }
 
