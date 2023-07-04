@@ -1,27 +1,25 @@
-/**************************************************************************/
-/*  yaml.hpp                                                              */
-/**************************************************************************/
-/* Copyright (c) 2023-present Ewan Robson.                                */
-/*                                                                        */
-/* Permission is hereby granted, free of charge, to any person obtaining  */
-/* a copy of this software and associated documentation files (the        */
-/* "Software"), to deal in the Software without restriction, including    */
-/* without limitation the rights to use, copy, modify, merge, publish,    */
-/* distribute, sublicense, and/or sell copies of the Software, and to     */
-/* permit persons to whom the Software is furnished to do so, subject to  */
-/* the following conditions:                                              */
-/*                                                                        */
-/* The above copyright notice and this permission notice shall be         */
-/* included in all copies or substantial portions of the Software.        */
-/*                                                                        */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
-/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
-/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
-/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
-/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
-/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
-/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
-/**************************************************************************/
+/**
+ * @file yaml.hpp
+ * @copyright Copyright (c) 2023-present Ewan Robson.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef __YAML_HPP__
 #define __YAML_HPP__
@@ -34,15 +32,60 @@
 
 namespace yaml {
 
+/**
+ * @class Convert<_T>
+ * @brief Used for string conversions in order to write or cast type from yaml file. Types that DO
+ * NOT have an implementation are considered unsupported and will be skipped by the API
+ *
+ * Default supported types are std::vector, std::string, std::uint8_t, std::uint16_t,
+ * std::uint32_t, std::uint64_t std::int8_t, std::int16_t, std::int32_t, std::int64_t, float,
+ * double, long double, std::int8_t*, bool
+ *
+ * @tparam _T Type
+ */
 template<typename _T>
 struct Convert
 {
-    std::string value_to_str(const _T& value);
-    _T value(const std::string& str);
+    /**
+     * @brief Checks if the type has an implementation of this structure. If there is none, the type
+     * is considered unsupported
+     */
+    constexpr bool supported() const { return false; }
 
-    _T value(const class Node& node);
+    /**
+     * @brief Converts target type info a string
+     *
+     * @param Value Target value to be converted into a string
+     * @return std::string of value
+     */
+    std::string value_to_str(const _T& value) { return ""; }
+
+    /**
+     * @brief Converts string of type into that type
+     *
+     * @param str std::string of the type, must be in the correct format otherwise program will
+     * crash
+     * @return Deserialized type from str
+     */
+    _T value(const std::string& str) { return _T(); }
+
+    /**
+     * @brief Converts string within the node into correct C++ type
+     *
+     * @param node Within the node, there is the std::string of the type, must be in the correct
+     * format otherwise program will crash
+     * @return Deserialized from from str
+     */
+    _T value(const class Node& node) { return _T(); }
 };
 
+/**
+ * @class NodeIterator<_Node>
+ * @brief Iterator type for iterating over yaml::Node's children nodes
+ *
+ * @tparam _Node yaml::Node, shouldn't be anything else
+ * @param it iterator type from _Node
+ */
 template<typename _Node>
 class NodeIterator
 {
@@ -100,14 +143,33 @@ class NodeIterator
     std::vector<_Node>::iterator m_it = nullptr;
 };
 
+/**
+ * @class Node
+ * @brief This library interprets yaml as a collection of nodes within nodes. A node contains the
+ * data of the type such as its fieldname, the value in string form, nodes chilren nodes and its
+ * parent node. You can access the nodes value by using as<_T> to cast the string value into its
+ * correct type. For more information on how to use this library, check out the README file
+ */
 class Node
 {
   public:
     using Iterator = NodeIterator<Node>;
 
     static const std::size_t null_index;
+
+    /**
+     * @bref Max size a line can be within a file
+     */
     inline static constexpr std::size_t max_line_size() { return 2048; }
+
+    /**
+     * @brief Max size a nodes name can be within a line of a file
+     */
     inline static constexpr std::size_t max_name_size() { return 100; }
+
+    /**
+     * @brief Max size a nodes value as a string can be within a line of a file
+     */
     inline static constexpr std::size_t max_value_size() { return 1948; }
 
   public:
@@ -149,7 +211,6 @@ class Node
     inline const std::string& get_value() const { return m_value; }
     inline const std::vector<Node>& get_children() const { return m_children; }
     inline const Node* get_parent() const { return m_parent; }
-    inline std::size_t get_type_hash() const { return m_hash; }
 
     inline std::vector<Node>& get_children() { return m_children; }
     inline Node* get_parent() { return m_parent; }
@@ -168,7 +229,6 @@ class Node
     std::string get_as_string() const;
 
     inline void set_parent(Node* parent) { m_parent = parent; }
-    inline void set_hash(std::size_t type_hash) { m_hash = type_hash; }
 
     bool open(const std::string& filename);
     inline bool empty() const { return m_children.size() == 0; }
@@ -196,7 +256,6 @@ class Node
     std::string m_value = {};
     std::vector<Node> m_children = {};
     Node* m_parent = nullptr;
-    std::size_t m_hash = 0;
 };
 
 Node& get_root_node(Node& node);
@@ -223,6 +282,8 @@ inline std::string get_root_as_string(Node& node) { return get_root_node(node).g
 template<typename _T>
 struct Convert<std::vector<_T>>
 {
+    constexpr bool supported() const { return true; }
+
     std::string value_to_str(const std::vector<_T>& value)
     {
         std::string str = "[";
@@ -297,6 +358,8 @@ struct Convert<std::vector<_T>>
 template<>
 struct Convert<bool>
 {
+    constexpr bool supported() const { return true; }
+
     std::string value_to_str(const bool& value)
     {
         if (value == true)
@@ -315,8 +378,18 @@ struct Convert<bool>
 };
 
 template<>
+struct Convert<std::int8_t>
+{
+    constexpr bool supported() const { return true; }
+    std::int8_t value(const std::string& str) { return str[1]; }
+    std::int8_t value(const Node& node) { return value(node.get_value()); }
+    std::string value_to_str(const char*& value) { return std::string(value); }
+};
+
+template<>
 struct Convert<std::int16_t>
 {
+    constexpr bool supported() const { return true; }
     std::int16_t value(const std::string& str) { return std::stoi(str); }
     std::int16_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int16_t& value) { return std::to_string(value); }
@@ -325,6 +398,7 @@ struct Convert<std::int16_t>
 template<>
 struct Convert<std::int32_t>
 {
+    constexpr bool supported() const { return true; }
     std::int32_t value(const std::string& str) { return std::stoi(str); }
     std::int32_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int32_t& value) { return std::to_string(value); }
@@ -333,14 +407,25 @@ struct Convert<std::int32_t>
 template<>
 struct Convert<std::int64_t>
 {
+    constexpr bool supported() const { return true; }
     std::int64_t value(const std::string& str) { return std::stoll(str); }
     std::int64_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::int64_t& value) { return std::to_string(value); }
 };
 
 template<>
+struct Convert<std::uint8_t>
+{
+    constexpr bool supported() const { return true; }
+    std::uint8_t value(const std::string& str) { return str[1]; }
+    std::uint8_t value(const Node& node) { return value(node.get_value()); }
+    std::string value_to_str(const char*& value) { return std::string(value); }
+};
+
+template<>
 struct Convert<std::uint16_t>
 {
+    constexpr bool supported() const { return true; }
     std::uint16_t value(const std::string& str) { return std::stoul(str); }
     std::uint16_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::uint16_t& value) { return std::to_string(value); }
@@ -349,6 +434,7 @@ struct Convert<std::uint16_t>
 template<>
 struct Convert<std::uint32_t>
 {
+    constexpr bool supported() const { return true; }
     std::uint32_t value(const std::string& str) { return std::stoul(str); }
     std::uint32_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::uint32_t& value) { return std::to_string(value); }
@@ -357,6 +443,7 @@ struct Convert<std::uint32_t>
 template<>
 struct Convert<std::size_t>
 {
+    constexpr bool supported() const { return true; }
     std::size_t value(const std::string& str) { return std::stoull(str); }
     std::size_t value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const std::size_t& value) { return std::to_string(value); }
@@ -365,6 +452,7 @@ struct Convert<std::size_t>
 template<>
 struct Convert<float>
 {
+    constexpr bool supported() const { return true; }
     float value(const std::string& str) { return std::stof(str); }
     float value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const float& value) { return std::to_string(value); }
@@ -373,6 +461,7 @@ struct Convert<float>
 template<>
 struct Convert<double>
 {
+    constexpr bool supported() const { return true; }
     double value(const std::string& str) { return std::stod(str); }
     double value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const double& value) { return std::to_string(value); }
@@ -381,30 +470,25 @@ struct Convert<double>
 template<>
 struct Convert<long double>
 {
+    constexpr bool supported() const { return true; }
     long double value(const std::string& str) { return std::stold(str); }
     long double value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const long double& value) { return std::to_string(value); }
 };
 
 template<>
-struct Convert<char*>
+struct Convert<std::int8_t*>
 {
+    constexpr bool supported() const { return true; }
     char* value(const std::string& str) { return const_cast<char*>(str.c_str()); }
     char* value(const Node& node) { return value(node.get_value()); }
     std::string value_to_str(const char*& value) { return std::string(value); }
 };
 
 template<>
-struct Convert<char>
-{
-    char value(const std::string& str) { return str[1]; }
-    char value(const Node& node) { return value(node.get_value()); }
-    std::string value_to_str(const char*& value) { return std::string(value); }
-};
-
-template<>
 struct Convert<std::string>
 {
+    constexpr bool supported() const { return true; }
     std::string value(const std::string& str)
     {
         return std::string(str.c_str() + 1, str.size() - 2);

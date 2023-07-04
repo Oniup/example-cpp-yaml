@@ -1,27 +1,25 @@
-/**************************************************************************/
-/*  yaml.cpp                                                              */
-/**************************************************************************/
-/* Copyright (c) 2023-present Ewan Robson.                                */
-/*                                                                        */
-/* Permission is hereby granted, free of charge, to any person obtaining  */
-/* a copy of this software and associated documentation files (the        */
-/* "Software"), to deal in the Software without restriction, including    */
-/* without limitation the rights to use, copy, modify, merge, publish,    */
-/* distribute, sublicense, and/or sell copies of the Software, and to     */
-/* permit persons to whom the Software is furnished to do so, subject to  */
-/* the following conditions:                                              */
-/*                                                                        */
-/* The above copyright notice and this permission notice shall be         */
-/* included in all copies or substantial portions of the Software.        */
-/*                                                                        */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
-/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
-/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
-/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
-/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
-/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
-/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
-/**************************************************************************/
+/**
+ * @file yaml.cpp
+ * @copyright Copyright (c) 2023-present Ewan Robson.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include "yaml.hpp"
 
@@ -44,8 +42,7 @@ Node::Node(const Node& other)
     : m_name(other.m_name),
       m_value(other.m_value),
       m_children(other.m_children),
-      m_parent(other.m_parent),
-      m_hash(other.m_hash)
+      m_parent(other.m_parent)
 {
 }
 
@@ -53,11 +50,9 @@ Node::Node(Node&& other)
     : m_name(std::move(other.m_name)),
       m_value(std::move(other.m_value)),
       m_children(std::move(other.m_children)),
-      m_parent(other.m_parent),
-      m_hash(other.m_hash)
+      m_parent(other.m_parent)
 {
     other.m_parent = nullptr;
-    other.m_hash = 0;
 }
 
 Node& Node::operator=(const Node& other)
@@ -66,7 +61,6 @@ Node& Node::operator=(const Node& other)
     m_value = other.m_value;
     m_children = other.m_children;
     m_parent = other.m_parent;
-    m_hash = other.m_hash;
 
     return *this;
 }
@@ -77,10 +71,8 @@ Node& Node::operator=(Node&& other)
     m_value = std::move(other.m_value);
     m_children = std::move(other.m_children);
     m_parent = other.m_parent;
-    m_hash = other.m_hash;
 
     other.m_parent = nullptr;
-    other.m_hash = 0;
 
     return *this;
 }
